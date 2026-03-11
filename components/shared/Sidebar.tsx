@@ -3,12 +3,16 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Home, Users, Settings, MoreVertical, Menu, X, LogOut, Loader2 } from 'lucide-react';
-import { Dropdown, Avatar } from 'antd';
+import { Home, Users, Settings, MoreVertical, Menu, X, LogOut, Loader2, ChevronRight, Wallet } from 'lucide-react';
+import { Dropdown } from 'antd';
 import type { MenuProps } from 'antd';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
+import SettingsModal from './SettingsModal';
+import UserAvatar from '../Avatar/UserAvatar';
 import { useAuth, useLogout } from '@/hooks/login/useAuth';
+import { MenuGroup } from '@/interface/sidebar';
+import { useSidebarExpansion } from '@/hooks/sidebar/useSidebarExpansion';
 
 function cn(...inputs: ClassValue[]) {
     return twMerge(clsx(inputs));
@@ -16,33 +20,13 @@ function cn(...inputs: ClassValue[]) {
 
 export default function Sidebar() {
     const pathname = usePathname();
-    const [isOpen, setIsOpen] = useState(false);
+    const [isOpen, setIsOpen] = useState(true);
+    const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+
     const { user, isLoading } = useAuth();
     const { mutate: logout } = useLogout();
 
-    const userMenuItems: MenuProps['items'] = [
-        {
-            key: 'settings',
-            label: (
-                <div className="flex items-center gap-2 py-1">
-                    <Settings size={16} />
-                    <span>Settings</span>
-                </div>
-            )
-        },
-        {
-            key: 'logout',
-            label: (
-                <div className="flex items-center gap-2 py-1 text-red-500">
-                    <LogOut size={16} />
-                    <span>Logout</span>
-                </div>
-            ),
-            onClick: () => logout(),
-        },
-    ];
-
-    const menuGroups = [
+    const menuGroups: MenuGroup[] = [
         {
             title: 'DASHBOARD',
             items: [
@@ -52,25 +36,58 @@ export default function Sidebar() {
         {
             title: 'MODULES',
             items: [
-                { name: 'Accounts', href: '/accounts', icon: Users }
+                {
+                    name: 'Budgeting',
+                    icon: Wallet,
+                    subItems: [
+                        { name: 'Accounts', href: '/accounts' },
+                        { name: 'Transactions', href: '/transactions' },
+                    ]
+                },
+                // MODULE_INSERTION_MARKER
             ]
         }
     ];
 
+    const { expandedMenus, toggleSubMenu } = useSidebarExpansion(pathname, menuGroups);
+
+    const userMenuItems: MenuProps['items'] = [
+        {
+            key: 'settings',
+            label: (
+                <div className="flex items-center gap-2 py-1">
+                    <Settings size={16} />
+                    <span>Settings</span>
+                </div>
+            ),
+            onClick: () => setIsSettingsOpen(true)
+        },
+        {
+            key: 'logout',
+            label: (
+                <div className="flex items-center gap-2 py-1 text-red-500">
+                    <LogOut size={16} />
+                    <span>Logout</span>
+                </div>
+            ),
+            onClick: () => logout?.(),
+        },
+    ];
+
     const sidebarContent = (
-        <div className="flex flex-col h-full bg-white">
+        <div className="flex flex-col h-full bg-sidebar transition-colors duration-300">
             <div className="p-6 flex items-center justify-between">
                 <Link href="/" className="flex items-center gap-2 group w-max">
-                    <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center shadow-sm">
+                    <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center group-hover:scale-105 transition-transform shadow-sm">
                         <span className="text-white font-bold text-xs">BT</span>
                     </div>
-                    <span className="text-[19px] font-bold text-gray-900 tracking-tight">
+                    <span className="text-md font-bold text-sidebar-text tracking-tight">
                         Budget Tracker
                     </span>
                 </Link>
                 <button
                     onClick={() => setIsOpen(false)}
-                    className="lg:hidden text-gray-400 hover:text-gray-600 transition-colors"
+                    className="lg:hidden text-sidebar-text/40 hover:text-sidebar-text transition-colors"
                 >
                     <X size={20} />
                 </button>
@@ -78,27 +95,74 @@ export default function Sidebar() {
             <div className="flex-1 overflow-y-auto px-4 py-2 flex flex-col gap-6">
                 {menuGroups.map((group, index) => (
                     <div key={index}>
-                        <h3 className="text-[11px] font-bold text-gray-500 uppercase tracking-wider mb-2 px-3">
+                        <h3 className="text-[11px] font-bold text-sidebar-text/40 uppercase tracking-wider mb-2 px-3">
                             {group.title}
                         </h3>
                         {group.items.length > 0 && (
                             <div className="flex flex-col gap-1">
                                 {group.items.map((item) => {
-                                    const isActive = pathname === item.href;
+                                    const hasSubItems = item.subItems && item.subItems.length > 0;
+                                    const isExpanded = expandedMenus.includes(item.name);
+                                    const isActive = pathname === item.href || (hasSubItems && item.subItems?.some(sub => pathname === sub.href));
                                     const Icon = item.icon;
+
+                                    if (hasSubItems) {
+                                        return (
+                                            <div key={item.name} className="flex flex-col gap-1">
+                                                <button
+                                                    onClick={() => toggleSubMenu(item.name)}
+                                                    className={cn(
+                                                        "flex items-center justify-between w-full px-3 py-2.5 rounded-lg text-[14px] interactive-item transition-all",
+                                                        isActive ? "text-sidebar-text font-semibold" : "text-sidebar-text/60 hover:text-sidebar-text font-medium"
+                                                    )}
+                                                >
+                                                    <div className="flex items-center gap-3">
+                                                        <Icon className={cn("w-[18px] h-[18px]", isActive ? "text-sidebar-text" : "text-sidebar-text/80")} />
+                                                        {item.name}
+                                                    </div>
+                                                    <ChevronRight size={16} className={cn("transition-transform duration-200", isExpanded && "rotate-90")} />
+                                                </button>
+                                                {isExpanded && (
+                                                    <div className="flex flex-col gap-1 ml-9 overflow-hidden animate-in slide-in-from-top-1 duration-200">
+                                                        {item.subItems?.map((sub) => {
+                                                            const isSubActive = pathname === sub.href;
+                                                            return (
+                                                                <Link
+                                                                    key={sub.href}
+                                                                    href={sub.href}
+                                                                    className={cn(
+                                                                        "flex items-center px-3 py-2 rounded-lg text-[13px] font-semibold transition-all",
+                                                                        isSubActive
+                                                                            ? "text-sidebar-text bg-neutral/50"
+                                                                            : "text-sidebar-text/60 hover:text-sidebar-text hover:bg-neutral/30"
+                                                                    )}
+                                                                >
+                                                                    <span className={cn(
+                                                                        "w-1.5 h-1.5 rounded-full mr-2",
+                                                                        isSubActive ? "bg-primary" : "bg-sidebar-text/60"
+                                                                    )} />
+                                                                    {sub.name}
+                                                                </Link>
+                                                            );
+                                                        })}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        );
+                                    }
+
                                     return (
                                         <Link
                                             key={item.href}
-                                            href={item.href}
-                                            onClick={() => setIsOpen(false)}
+                                            href={item.href || '#'}
                                             className={cn(
-                                                "flex items-center gap-3 px-3 py-2.5 rounded-lg text-[14px] font-semibold transition-colors",
+                                                "flex items-center gap-3 px-3 py-2.5 rounded-lg text-[14px] font-bold interactive-item",
                                                 isActive
-                                                    ? "bg-gray-100 text-gray-900"
-                                                    : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                                                    ? "bg-neutral text-sidebar-text"
+                                                    : "text-sidebar-text/60 hover:text-sidebar-text"
                                             )}
                                         >
-                                            <Icon className={cn("w-[18px] h-[18px]", isActive ? "text-gray-900" : "text-gray-500")} />
+                                            <Icon className={cn("w-[18px] h-[18px]", isActive ? "text-sidebar-text" : "text-sidebar-text/40")} />
                                             {item.name}
                                         </Link>
                                     );
@@ -109,33 +173,33 @@ export default function Sidebar() {
                 ))}
             </div>
 
-            <div className="p-5">
+            <div className="p-5 overflow-hidden">
                 <Dropdown menu={{ items: userMenuItems }} placement="topRight" trigger={['click']}>
-                    <div className="flex items-center justify-between pt-4 border-t border-gray-100 cursor-pointer group">
+                    <div className="flex items-center justify-between pt-4 border-t border-border cursor-pointer group">
                         <div className="flex items-center gap-3 overflow-hidden">
                             {isLoading ? (
-                                <div className="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center">
-                                    <Loader2 className="w-4 h-4 text-gray-400 animate-spin" />
+                                <div className="w-9 h-9 rounded-full bg-neutral flex items-center justify-center">
+                                    <Loader2 className="w-4 h-4 text-sidebar-text/40 animate-spin" />
                                 </div>
                             ) : (
-                                <Avatar
-                                    src={user?.user_metadata?.avatar_url}
+                                <UserAvatar
+                                    src={(user as any)?.user_metadata?.avatar_url || (user as any)?.GAvatar}
+                                    name={(user as any)?.user_metadata?.full_name || (user as any)?.Nickname || (user as any)?.AccountName}
+                                    domainAccount={(user as any)?.DomainAccount}
                                     size={36}
-                                    className="bg-accent-1 text-white font-bold shadow-sm group-hover:scale-105 transition-transform shrink-0"
-                                >
-                                    {user?.user_metadata?.full_name?.charAt(0) || user?.email?.charAt(0) || 'U'}
-                                </Avatar>
+                                    className="shadow-sm group-hover:scale-105 transition-transform shrink-0"
+                                />
                             )}
                             <div className="flex flex-col text-left overflow-hidden">
-                                <span className="text-[14px] font-semibold text-gray-900 leading-none mb-1 truncate">
-                                    {isLoading ? 'Loading...' : (user?.user_metadata?.full_name || 'Budget Tracker User')}
+                                <span className="text-xs font-bold text-sidebar-text leading-none mb-1 truncate">
+                                    {isLoading ? 'Loading...' : ((user as any)?.user_metadata?.full_name || (user as any)?.Nickname || (user as any)?.AccountName || 'Guest User')}
                                 </span>
-                                <span className="text-[12px] text-gray-500 truncate">
-                                    {isLoading ? 'Please wait' : (user?.email || 'Not logged in')}
+                                <span className="text-xs text-sidebar-text/50 font-medium truncate">
+                                    {isLoading ? 'Please wait' : ((user as any)?.email || (user as any)?.Email || 'Not logged in')}
                                 </span>
                             </div>
                         </div>
-                        <MoreVertical className="w-5 h-5 text-gray-400 group-hover:text-gray-700 transition-colors flex-shrink-0" />
+                        <MoreVertical className="w-4 h-4 text-sidebar-text/40 group-hover:text-sidebar-text transition-colors flex-shrink-0" />
                     </div>
                 </Dropdown>
             </div>
@@ -143,12 +207,12 @@ export default function Sidebar() {
     );
 
     return (
-        <div className="flex h-full">
-            <header className="lg:hidden fixed top-0 left-0 w-full z-40 bg-white/80 backdrop-blur-md border-b border-gray-200 px-4 h-16 flex items-center justify-between">
+        <>
+            <header className="lg:hidden sticky top-0 left-0 w-full z-40 bg-background border-b border-border px-4 h-16 flex items-center justify-between shrink-0 transition-colors">
                 <div className="flex items-center gap-3">
                     <button
                         onClick={() => setIsOpen(true)}
-                        className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                        className="p-2 text-sidebar-text/60 hover:bg-neutral rounded-lg transition-colors"
                     >
                         <Menu size={24} />
                     </button>
@@ -156,30 +220,34 @@ export default function Sidebar() {
                         <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center shadow-sm">
                             <span className="text-white font-bold text-xs">BT</span>
                         </div>
-                        <span className="text-lg font-bold text-gray-900 tracking-tight">Budget Tracker</span>
+                        <span className="text-lg font-bold text-sidebar-text tracking-tight leading-none uppercase tracking-tighter">Budget Tracker</span>
                     </Link>
                 </div>
             </header>
 
-            {/* Mobile Sidebar Overlay */}
             <div
                 className={cn(
-                    "fixed inset-0 z-[60] transform transition-transform duration-300 ease-in-out lg:hidden",
+                    "fixed inset-0 z-[60] transform transition-transform duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] lg:hidden",
                     isOpen ? "translate-x-0" : "-translate-x-full"
                 )}
             >
                 <div
-                    className="absolute inset-0 bg-black/20 backdrop-blur-sm"
+                    className="absolute inset-0 bg-primary/20 backdrop-blur-sm"
                     onClick={() => setIsOpen(false)}
                 ></div>
-                <div className="absolute left-0 top-0 h-full w-[280px] bg-white shadow-2xl overflow-hidden">
+                <div className="absolute left-0 top-0 h-full w-[280px] bg-background shadow-2xl overflow-hidden">
                     {sidebarContent}
                 </div>
             </div>
 
-            <aside className="hidden lg:flex w-64 flex-col h-screen border-r border-gray-200 sticky top-0 bg-white z-40">
+            <aside className="hidden lg:flex w-64 flex-col h-screen border-r border-border sticky top-0 bg-sidebar shadow-sm shrink-0 transition-colors">
                 {sidebarContent}
             </aside>
-        </div>
+
+            <SettingsModal
+                visible={isSettingsOpen}
+                onClose={() => setIsSettingsOpen(false)}
+            />
+        </>
     );
 }
