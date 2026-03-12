@@ -84,3 +84,46 @@ body {
 .settings-modal .ant-modal-body {
   padding: 0 !important;
 }
+
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-areas:
+    "balance balance goals"
+    "cards cards daily"
+    "transactions transactions transactions"
+    "transactions transactions transactions";
+  gap: 1.5rem;
+}
+
+@media (max-width: 1024px) {
+  .dashboard-grid {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "balance"
+      "cards"
+      "goals"
+      "daily"
+      "transactions";
+  }
+}
+
+.area-balance {
+  grid-area: balance;
+}
+
+.area-cards {
+  grid-area: cards;
+}
+
+.area-goals {
+  grid-area: goals;
+}
+
+.area-daily {
+  grid-area: daily;
+}
+
+.area-transactions {
+  grid-area: transactions;
+}
