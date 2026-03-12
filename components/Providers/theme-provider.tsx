@@ -27,6 +27,8 @@ function StaticApp() {
     return null;
 }
 
+import { createClient } from '@/utils/supabase/client';
+
 export type Theme = 'light' | 'dark' | 'system';
 
 interface ThemeContextType {
@@ -39,12 +41,43 @@ const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
     const [theme, setThemeState] = useState<Theme>('system');
     const [isDark, setIsDark] = useState<boolean>(false);
+    const supabase = createClient();
 
     // Initialize theme from localStorage or default to system
     useEffect(() => {
         const savedTheme = (localStorage.getItem('app-theme') as Theme) || 'system';
         setThemeState(savedTheme);
         applyTheme(savedTheme);
+        
+        // Fetch preference from Supabase if user is logged in
+        const syncSupabaseTheme = async () => {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (user) {
+                const { data, error } = await supabase
+                    .from('users')
+                    .select('"isDark"')
+                    .eq('id', user.id)
+                    .single();
+                
+                if (!error && data) {
+                    const supabaseTheme: Theme = data.isDark ? 'dark' : 'light';
+                    setThemeState(supabaseTheme);
+                    applyTheme(supabaseTheme);
+                    localStorage.setItem('app-theme', supabaseTheme);
+                }
+            }
+        };
+
+        syncSupabaseTheme();
+
+        // Listen for auth changes to sync theme on login
+        const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+            if (event === 'SIGNED_IN' && session?.user) {
+                syncSupabaseTheme();
+            }
+        });
+
+        return () => subscription.unsubscribe();
     }, []);
 
     // Listen to system theme changes if 'system' is currently selected
@@ -89,10 +122,19 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
         applyThemeClasses(isDarkMode);
     };
 
-    const setTheme = (newTheme: Theme) => {
+    const setTheme = async (newTheme: Theme) => {
         setThemeState(newTheme);
         localStorage.setItem('app-theme', newTheme);
         applyTheme(newTheme);
+
+        // Update Supabase if user is logged in
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user && newTheme !== 'system') {
+            await supabase
+                .from('users')
+                .update({ isDark: newTheme === 'dark' })
+                .eq('id', user.id);
+        }
     };
 
     return (

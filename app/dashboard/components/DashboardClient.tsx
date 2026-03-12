@@ -74,7 +74,7 @@ export default function DashboardClient({ userEmail }: DashboardClientProps) {
                 <p className="text-5xl font-bold text-text tracking-tight transition-all duration-300">
                   {totalVisible ? '$41,050.00' : '••••••'}
                 </p>
-                <button 
+                <button
                   onClick={() => setTotalVisible(!totalVisible)}
                   className="p-2 rounded-xl hover:bg-neutral text-text-info hover:text-accent-1 transition-all border border-transparent hover:border-border"
                   title={totalVisible ? "Hide Balance" : "Show Balance"}
@@ -111,7 +111,7 @@ export default function DashboardClient({ userEmail }: DashboardClientProps) {
                   <div className={`${acc.bg} ${acc.color} p-2.5 rounded-xl`}>
                     <acc.icon size={20} />
                   </div>
-                  <button 
+                  <button
                     onClick={(e) => {
                       e.stopPropagation();
                       toggleAccount(i);
@@ -148,8 +148,8 @@ export default function DashboardClient({ userEmail }: DashboardClientProps) {
                     <span className="text-text-info">{goal.current}</span>
                   </div>
                   <div className="h-1.5 w-full bg-neutral rounded-full overflow-hidden">
-                    <div 
-                      className="h-full bg-accent-1 rounded-full transition-all duration-1000" 
+                    <div
+                      className="h-full bg-accent-1 rounded-full transition-all duration-1000"
                       style={{ width: `${goal.progress}%` }}
                     />
                   </div>
@@ -184,8 +184,8 @@ export default function DashboardClient({ userEmail }: DashboardClientProps) {
                     </span>
                   </div>
                   <div className="h-1.5 w-full bg-neutral rounded-full overflow-hidden">
-                    <div 
-                      className={`h-full ${budget.color.replace('text-', 'bg-')} rounded-full transition-all duration-1000`} 
+                    <div
+                      className={`h-full ${budget.color.replace('text-', 'bg-')} rounded-full transition-all duration-1000`}
                       style={{ width: `${(budget.spent / budget.limit) * 100}%` }}
                     />
                   </div>
@@ -212,13 +212,6 @@ export default function DashboardClient({ userEmail }: DashboardClientProps) {
                 Recent Transactions
               </h3>
               <div className="flex gap-2">
-                <button 
-                  onClick={() => setTransactionsVisible(!transactionsVisible)}
-                  className="p-2 rounded-xl hover:bg-neutral text-text-info hover:text-accent-1 transition-all border border-transparent hover:border-border"
-                  title={transactionsVisible ? "Hide Amounts" : "Show Amounts"}
-                >
-                  {transactionsVisible ? <Eye size={18} /> : <EyeOff size={18} />}
-                </button>
                 <button className="text-accent-1 text-sm font-medium hover:underline px-2">Download Report</button>
               </div>
             </div>
