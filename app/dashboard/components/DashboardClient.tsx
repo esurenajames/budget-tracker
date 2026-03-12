@@ -9,6 +9,7 @@ interface DashboardClientProps {
 
 export default function DashboardClient({ userEmail }: DashboardClientProps) {
   const [totalVisible, setTotalVisible] = useState(true);
+  const [transactionsVisible, setTransactionsVisible] = useState(true);
   const [accountVisibility, setAccountVisibility] = useState<Record<number, boolean>>({
     0: true, 1: true, 2: true, 3: true
   });
@@ -211,6 +212,13 @@ export default function DashboardClient({ userEmail }: DashboardClientProps) {
                 Recent Transactions
               </h3>
               <div className="flex gap-2">
+                <button 
+                  onClick={() => setTransactionsVisible(!transactionsVisible)}
+                  className="p-2 rounded-xl hover:bg-neutral text-text-info hover:text-accent-1 transition-all border border-transparent hover:border-border"
+                  title={transactionsVisible ? "Hide Amounts" : "Show Amounts"}
+                >
+                  {transactionsVisible ? <Eye size={18} /> : <EyeOff size={18} />}
+                </button>
                 <button className="text-accent-1 text-sm font-medium hover:underline px-2">Download Report</button>
               </div>
             </div>
@@ -227,7 +235,7 @@ export default function DashboardClient({ userEmail }: DashboardClientProps) {
                     </div>
                   </div>
                   <p className={`font-bold text-lg ${t.type === 'income' ? 'text-green-600' : 'text-text'} transition-all duration-300`}>
-                    {totalVisible ? t.amount : '••••••'}
+                    {transactionsVisible ? t.amount : '••••••'}
                   </p>
                 </div>
               ))}
